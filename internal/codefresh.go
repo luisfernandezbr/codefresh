@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pinpt/agent/v4/sdk"
@@ -75,6 +76,7 @@ func (g *CodefreshIntegration) fetchBuilds(logger sdk.Logger, pipe sdk.Pipe, exp
 	var page int
 	var savedETag string
 	var total int
+	var retries int
 
 	qs := url.Values{}
 	started := time.Now()
@@ -96,6 +98,11 @@ func (g *CodefreshIntegration) fetchBuilds(logger sdk.Logger, pipe sdk.Pipe, exp
 		ts := time.Now()
 		resp, err := httpmanager.Get(&result, opts...)
 		if err != nil {
+			if strings.Contains(err.Error(), "timeout") && retries < 5 {
+				retries++
+				time.Sleep(time.Second * time.Duration(5*retries))
+				continue
+			}
 			return err
 		}
 		if savedETag == "" {
@@ -179,5 +186,18 @@ func (g *CodefreshIntegration) AutoConfigure(autoconfig sdk.AutoConfigure) (*sdk
 // source system. The result and the error will both be delivered to the App.
 // Returning a nil error is considered a successful validation.
 func (g *CodefreshIntegration) Validate(validate sdk.Validate) (result map[string]interface{}, err error) {
-	return nil, nil
+	if validate.Config().APIKeyAuth != nil {
+		apiKey := validate.Config().APIKeyAuth.APIKey
+		httpmanager := g.manager.HTTPManager().New("https://g.codefresh.io/api/workflow?limit=1", map[string]string{"Authorization": apiKey})
+		var r interface{}
+		resp, err := httpmanager.Get(&r)
+		if err != nil {
+			return nil, fmt.Errorf("error validating API Key: %w", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("error validating API Key (status code=%d)", resp.StatusCode)
+		}
+		return nil, nil
+	}
+	return nil, fmt.Errorf("required API Key not found")
 }

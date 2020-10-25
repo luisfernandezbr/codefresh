@@ -7,14 +7,15 @@ import (
 )
 
 type workflowBuild struct {
-	ID           string    `json:"id"`
-	Pipeline     string    `json:"pipelineName"`
-	Started      time.Time `json:"started"`
-	Finished     time.Time `json:"finished"`
-	Status       string    `json:"status"`
-	Sha          string    `json:"revision"`
-	Trigger      string    `json:"trigger"`
-	SystemEvents []struct {
+	ID             string    `json:"id"`
+	Pipeline       string    `json:"pipelineName"`
+	Started        time.Time `json:"started"`
+	Finished       time.Time `json:"finished"`
+	Status         string    `json:"status"`
+	Sha            string    `json:"revision"`
+	Trigger        string    `json:"trigger"`
+	PullRequestURL string    `json:"pullRequestUrl"`
+	SystemEvents   []struct {
 		Kind    string `json:"kind"`
 		Message string `json:"message"`
 		Step    string `json:"step"`

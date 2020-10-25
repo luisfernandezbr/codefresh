@@ -1,6 +1,23 @@
-@import (reference) '~@pinpt/uic.next/theme.less';
+@import '~@pinpt/uic.next/Styles/styles.less';
 
 .Container {
 	margin: 0;
 	padding: 0;
+	margin-top: 2rem;
+
+	.Error {
+		margin-top: 1rem;
+		color: @Red500;
+	}
+
+	ul {
+		list-style: none !important;
+		li:before {
+			content: "" !important;
+			padding-right: 0 !important;
+		}
+		li {
+			margin-top: 1.5rem;
+		}
+	}
 }

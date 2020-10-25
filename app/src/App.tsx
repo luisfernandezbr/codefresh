@@ -13,7 +13,7 @@ function App() {
 			],
 			installed: false,
 			refType: 'codefresh',
-			icon: '',
+			icon: 'https://avatars2.githubusercontent.com/u/11412079?s=200&v=4',
 			publisher: {
 				name: 'Pinpoint Software, Inc.',
 				avatar: 'https://avatars0.githubusercontent.com/u/24400526?s=200&v=4',
