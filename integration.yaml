@@ -1,0 +1,9 @@
+name: "Codefresh"
+ref_type: "codefresh"
+description: "This is the official Codefresh integration for Pinpoint"
+avatar_url: "https://avatars2.githubusercontent.com/u/11412079?s=200&v=4"
+capabilities:
+  - cicd.Build
+installation:
+  modes:
+    - cloud
