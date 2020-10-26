@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pinpt/agent/v4/sdk"
@@ -50,6 +52,7 @@ func (b workflowBuild) ToModel(refType string, customerID string, integrationIns
 	build.URL = sdk.StringPointer("https://g.codefresh.io/build/" + b.ID)
 	build.Sha = b.Sha
 	build.Automated = b.Trigger == "build"
+	build.PullrequestURL = sdk.StringPointer(b.PullRequestURL)
 	sdk.ConvertTimeToDateModel(b.Started, &build.StartDate)
 	if !b.Finished.IsZero() {
 		sdk.ConvertTimeToDateModel(b.Finished, &build.EndDate)
@@ -59,52 +62,27 @@ func (b workflowBuild) ToModel(refType string, customerID string, integrationIns
 		build.Status = sdk.CICDBuildStatusPass
 	case "error":
 		build.Status = sdk.CICDBuildStatusFail
-		// if len(b.SystemEvents) > 0 {
-		// 	msg := make([]string, 0)
-		// 	for _, e := range b.SystemEvents {
-		// 		if e.Kind == "error" {
-		// 			msg = append(msg, fmt.Sprintf("%s: %s", e.Step, e.Message))
-		// 		}
-		// 	}
-		// }
+		if len(b.SystemEvents) > 0 {
+			msg := make([]string, 0)
+			for _, e := range b.SystemEvents {
+				if e.Kind == "error" {
+					msg = append(msg, fmt.Sprintf("%s: %s", e.Step, e.Message))
+				}
+			}
+			build.Message = sdk.StringPointer(strings.Join(msg, ","))
+		}
 	case "terminated":
 		build.Status = sdk.CICDBuildStatusCancel
+		if len(b.PendingApprovals) > 0 {
+			msg := make([]string, 0)
+			// see if it was terminated because the approval step was denied
+			for _, e := range b.PendingApprovals {
+				if e.Timeout.FinalState == "denied" {
+					msg = append(msg, fmt.Sprintf("%s: Approval Denied", e.Name))
+				}
+			}
+			build.Message = sdk.StringPointer(strings.Join(msg, ","))
+		}
 	}
 	return &build, nil
 }
-
-// "systemEvents": [
-// 	{
-// 		"retriable": false,
-// 		"_id": "5f944bdc6426ff563430817c",
-// 		"kind": "error",
-// 		"message": "Failed to push image registry.gitlab.com/pinpt/event-api:master",
-// 		"step": "Pushing to users registry"
-// 	},
-// 	{
-// 		"retriable": false,
-// 		"_id": "5f944bdceca6b5623f84c66c",
-// 		"kind": "error",
-// 		"message": "Failed to push image: pinpt/event-api:master to the registry",
-// 		"step": "Building Docker Image"
-// 	}
-// ],
-
-// "pendingApprovals": [
-// 	{
-// 		"tokens": {
-// 			"cfApiKeyTokenName": "cfApiKey_5f935c1b85ce560cbfdb7ccd",
-// 			"engineTokenName": "wf_5f935c1b85ce560cbfdb7ccd"
-// 		},
-// 		"timeout": {
-// 			"duration": 1,
-// 			"finalState": "denied"
-// 		},
-// 		"name": "approval_for_push",
-// 		"startedAt": "2020-10-23T22:44:39.047Z",
-// 		"historySegmentStarted": "2020-10-23T22:41:41.824Z",
-// 		"historySegmentElectionDate": "2020-10-23T22:41:31.631Z",
-// 		"title": "Deploy to Stable?",
-// 		"finishedAt": "2020-10-23T23:44:46.598Z"
-// 	}
-// ],
